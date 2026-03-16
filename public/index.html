@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Impostor</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0f0e17;
+      --surface: #1a1a2e;
+      --card: #222244;
+      --primary: #e53170;
+      --primary-hover: #ff4081;
+      --accent: #7f5af0;
+      --text: #fffffe;
+      --text-dim: #94a1b2;
+      --green: #2cb67d;
+      --red: #e53170;
+      --yellow: #ffc107;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 480px;
+      padding: 24px;
+    }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    h1 {
+      font-size: 2.8rem;
+      text-align: center;
+      margin-bottom: 8px;
+      letter-spacing: -1px;
+    }
+    h1 .highlight { color: var(--primary); }
+
+    .subtitle {
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.95rem;
+      margin-bottom: 32px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #333;
+      border-radius: 12px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 1.1rem;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    input[type="text"]::placeholder { color: #555; }
+
+    .btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+
+    .btn-secondary {
+      background: var(--accent);
+      color: white;
+    }
+    .btn-secondary:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border: 2px solid #444;
+    }
+    .btn-outline:hover { border-color: var(--accent); }
+
+    .btn-green {
+      background: var(--green);
+      color: white;
+    }
+
+    .btn-yellow {
+      background: var(--yellow);
+      color: #000;
+    }
+
+    .btn + .btn { margin-top: 12px; }
+
+    .divider {
+      text-align: center;
+      color: var(--text-dim);
+      margin: 20px 0;
+      font-size: 0.85rem;
+    }
+
+    .error-toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--red);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-weight: 600;
+      z-index: 100;
+      display: none;
+      animation: slideDown 0.3s ease;
+    }
+    @keyframes slideDown { from { opacity: 0; top: 0; } to { opacity: 1; top: 20px; } }
+
+    /* Lobby */
+    .room-code-display {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .room-code-display .code {
+      font-size: 3rem;
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: 8px;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .room-code-display .code:hover { color: var(--primary); }
+    .room-code-display .hint {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    .player-list {
+      background: var(--surface);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .player-list h3 {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+    .player-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #ffffff10;
+    }
+    .player-item:last-child { border-bottom: none; }
+    .player-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+    .player-name { flex: 1; font-weight: 600; }
+    .host-badge {
+      background: var(--yellow);
+      color: #000;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+    }
+
+    .share-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--card);
+      border: 1px solid #444;
+      color: var(--text);
+      padding: 10px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      margin-top: 8px;
+      transition: border-color 0.2s;
+    }
+    .share-btn:hover { border-color: var(--accent); }
+
+    /* Game screen */
+    .word-card {
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 40px 24px;
+      text-align: center;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .word-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+    }
+    .word-card.safe::before { background: var(--green); }
+    .word-card.impostor::before { background: var(--red); }
+
+    .word-card .category-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+    }
+    .word-card .word {
+      font-size: 2.4rem;
+      font-weight: 800;
+    }
+    .word-card .role-tag {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .word-card.safe .role-tag {
+      background: #2cb67d22;
+      color: var(--green);
+    }
+    .word-card.impostor .role-tag {
+      background: #e5317022;
+      color: var(--red);
+    }
+    .word-card.impostor .word {
+      color: var(--red);
+    }
+
+    /* Reveal screen */
+    .reveal-card {
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 32px 24px;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .reveal-card .reveal-title {
+      font-size: 1.2rem;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+    .reveal-card .reveal-word {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--green);
+    }
+    .reveal-card .impostor-name {
+      margin-top: 20px;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--red);
+    }
+    .reveal-card .impostor-label {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-top: 4px;
+    }
+
+    .waiting-msg {
+      text-align: center;
+      color: var(--text-dim);
+      font-style: italic;
+      margin-top: 16px;
+    }
+
+    .copied-toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--green);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      z-index: 100;
+      display: none;
+    }
+
+    .avatar-colors { display: none; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- HOME -->
+    <div id="screen-home" class="screen active">
+      <h1><span class="highlight">?</span> Impostor</h1>
+      <p class="subtitle">Descubre quien es el impostor entre tus amigos</p>
+
+      <div class="form-group">
+        <label>Tu nombre</label>
+        <input type="text" id="player-name" placeholder="Escribe tu nombre..." maxlength="15" autocomplete="off">
+      </div>
+
+      <button class="btn btn-primary" id="btn-create">Crear sala</button>
+      <div class="divider">o</div>
+      <div class="form-group">
+        <label>Codigo de sala</label>
+        <input type="text" id="room-code-input" placeholder="Ej: AB12" maxlength="4" autocomplete="off" style="text-transform:uppercase; text-align:center; letter-spacing:6px; font-size:1.4rem;">
+      </div>
+      <button class="btn btn-outline" id="btn-join">Unirse a sala</button>
+    </div>
+
+    <!-- LOBBY -->
+    <div id="screen-lobby" class="screen">
+      <h1><span class="highlight">?</span> Impostor</h1>
+      <div class="room-code-display">
+        <div class="code" id="lobby-code" title="Click para copiar"></div>
+        <div class="hint">Toca el codigo para copiar el link</div>
+      </div>
+      <div class="player-list">
+        <h3>Jugadores (<span id="player-count">0</span>)</h3>
+        <div id="player-list-items"></div>
+      </div>
+      <div id="host-controls">
+        <button class="btn btn-primary" id="btn-start">Iniciar juego</button>
+      </div>
+      <p class="waiting-msg" id="waiting-msg">Esperando a que el host inicie...</p>
+    </div>
+
+    <!-- GAME -->
+    <div id="screen-game" class="screen">
+      <h1><span class="highlight">?</span> Impostor</h1>
+      <div class="word-card" id="word-card">
+        <div class="category-label" id="game-category"></div>
+        <div class="word" id="game-word"></div>
+        <div class="role-tag" id="game-role"></div>
+      </div>
+      <div id="host-game-controls">
+        <button class="btn btn-yellow" id="btn-reveal">Revelar impostor</button>
+      </div>
+    </div>
+
+    <!-- REVEAL -->
+    <div id="screen-reveal" class="screen">
+      <h1><span class="highlight">?</span> Impostor</h1>
+      <div class="reveal-card">
+        <div class="reveal-title">La palabra era</div>
+        <div class="reveal-word" id="reveal-word"></div>
+        <div style="margin-top:24px;">
+          <div class="impostor-label">El impostor era</div>
+          <div class="impostor-name" id="reveal-impostor"></div>
+        </div>
+      </div>
+      <div id="host-reveal-controls">
+        <button class="btn btn-primary" id="btn-new-round">Nueva ronda</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="error-toast" id="error-toast"></div>
+  <div class="copied-toast" id="copied-toast">Link copiado!</div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    const avatarColors = ['#e53170','#7f5af0','#2cb67d','#ff6b35','#00b4d8','#ffc107','#8338ec','#06d6a0','#ef476f','#118ab2','#ff9f1c','#6a4c93','#1b9aaa','#d7263d','#457b9d'];
+
+    let myId = null;
+    let isHost = false;
+    let roomCode = null;
+
+    // --- Screens ---
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById('screen-' + id).classList.add('active');
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('error-toast');
+      el.textContent = msg;
+      el.style.display = 'block';
+      setTimeout(() => el.style.display = 'none', 3000);
+    }
+
+    function showCopied() {
+      const el = document.getElementById('copied-toast');
+      el.style.display = 'block';
+      setTimeout(() => el.style.display = 'none', 2000);
+    }
+
+    // --- Home ---
+    document.getElementById('btn-create').addEventListener('click', () => {
+      const name = document.getElementById('player-name').value.trim();
+      if (!name) return showError('Escribe tu nombre');
+      socket.emit('create-room', name);
+    });
+
+    document.getElementById('btn-join').addEventListener('click', () => {
+      const name = document.getElementById('player-name').value.trim();
+      const code = document.getElementById('room-code-input').value.trim().toUpperCase();
+      if (!name) return showError('Escribe tu nombre');
+      if (!code || code.length < 4) return showError('Codigo invalido');
+      socket.emit('join-room', { code, playerName: name });
+    });
+
+    // Auto-fill room code from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('sala')) {
+      document.getElementById('room-code-input').value = urlParams.get('sala');
+    }
+
+    // --- Socket events ---
+    socket.on('room-joined', ({ code, playerId }) => {
+      myId = playerId;
+      roomCode = code;
+      showScreen('lobby');
+    });
+
+    socket.on('room-update', ({ code, players, state }) => {
+      roomCode = code;
+      isHost = players.find(p => p.id === myId)?.isHost || false;
+
+      document.getElementById('lobby-code').textContent = code;
+      document.getElementById('player-count').textContent = players.length;
+
+      const list = document.getElementById('player-list-items');
+      list.innerHTML = players.map((p, i) => `
+        <div class="player-item">
+          <div class="player-avatar" style="background:${avatarColors[i % avatarColors.length]}">${p.name[0].toUpperCase()}</div>
+          <span class="player-name">${p.name}${p.id === myId ? ' (tu)' : ''}</span>
+          ${p.isHost ? '<span class="host-badge">Host</span>' : ''}
+        </div>
+      `).join('');
+
+      document.getElementById('host-controls').style.display = isHost ? 'block' : 'none';
+      document.getElementById('waiting-msg').style.display = isHost ? 'none' : 'block';
+
+      if (state === 'lobby') showScreen('lobby');
+    });
+
+    socket.on('game-started', ({ category, word, isImpostor }) => {
+      const card = document.getElementById('word-card');
+      card.className = 'word-card ' + (isImpostor ? 'impostor' : 'safe');
+      document.getElementById('game-category').textContent = 'Categoria: ' + category;
+      document.getElementById('game-word').textContent = isImpostor ? '???' : word;
+      document.getElementById('game-role').textContent = isImpostor ? 'Eres el impostor' : 'Conoces la palabra';
+
+      document.getElementById('host-game-controls').style.display = isHost ? 'block' : 'none';
+      showScreen('game');
+    });
+
+    socket.on('game-reveal', ({ word, category, impostorName }) => {
+      document.getElementById('reveal-word').textContent = word;
+      document.getElementById('reveal-impostor').textContent = impostorName;
+      document.getElementById('host-reveal-controls').style.display = isHost ? 'block' : 'none';
+      showScreen('reveal');
+    });
+
+    socket.on('error-msg', (msg) => showError(msg));
+
+    // --- Lobby actions ---
+    document.getElementById('lobby-code').addEventListener('click', () => {
+      const url = window.location.origin + '?sala=' + roomCode;
+      navigator.clipboard.writeText(url).then(showCopied).catch(() => showCopied());
+    });
+
+    document.getElementById('btn-start').addEventListener('click', () => socket.emit('start-game'));
+    document.getElementById('btn-reveal').addEventListener('click', () => socket.emit('reveal'));
+    document.getElementById('btn-new-round').addEventListener('click', () => socket.emit('new-round'));
+
+    // --- Enter key support ---
+    document.getElementById('player-name').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const code = document.getElementById('room-code-input').value.trim();
+        if (code.length >= 4) document.getElementById('btn-join').click();
+        else document.getElementById('btn-create').click();
+      }
+    });
+    document.getElementById('room-code-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('btn-join').click();
+    });
+  </script>
+</body>
+</html>
